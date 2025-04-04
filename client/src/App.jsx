@@ -13,7 +13,7 @@ function App() {
         <div
           className={`${
             !clicked ? "hidden" : "block"
-          } w-[40%] h-[40%] p-4 bg-white rounded-lg shadow-xl absolute bottom-20 right-0`}
+          } w-[40%] h-[40%] p-4 bg-gray-200 rounded-lg shadow-xl absolute bottom-20 right-0`}
         >
           <h2 className="text-lg font-bold mb-2">Login</h2>
           <form className="flex flex-col space-y-2">
