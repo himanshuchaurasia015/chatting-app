@@ -1,48 +1,58 @@
-import { useState } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useState, useEffect } from "react";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import ChatLayout from "./layouts/ChatLayout";
+import ChatWindow from "./components/ChatWindow";
+import { UserProvider } from "./context/UserContext";
+import { ChatProvider } from "./context/ChatContext";
 import "./App.css";
+import Home from "./components/Home.jsx";
 
 function App() {
-  const [clicked, setClicked] = useState(false);
-  const handleClick = () => {
-    setClicked(!clicked);
-    // alert("button clicked");
-  };
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check if user is logged in from localStorage
+    const user = localStorage.getItem("user");
+    if (user) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   return (
-    <>
-      <div
-        className={`${
-          !clicked ? "hidden" : "block"
-        } w-[100%] h-[100%] p-4 bg-gray-400 rounded-lg shadow-xl `}
-      >
-        <h2 className="text-lg font-bold mb-2">Login</h2>
-        <form className="flex flex-col space-y-2">
-          <input
-            type="text"
-            placeholder="Username"
-            className="border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            className="border border-gray-300 px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-          >
-            Login
-          </button>
-        </form>
-      </div>
-      <div className="fixed bottom-5 right-5 z-50  ">
-        <button
-          onClick={handleClick}
-          className="w-16 h-16 rounded-full bg-blue-600 text-white text-3xl shadow-lg hover:bg-blue-700 transition"
-        >
-          +
-        </button>
-      </div>
-    </>
+    <Router>
+      <UserProvider>
+        <ChatProvider>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                isAuthenticated ? (
+                  <Navigate to={`/home`} />
+                ) : (
+                  <Login setIsAuthenticated={setIsAuthenticated} />
+                )
+              }
+            />
+            <Route
+              path="/register"
+              element={<Register setIsAuthenticated={setIsAuthenticated} />}
+            />{" "}
+            <Route path="/" element={<ChatLayout />}>
+              <Route path="/home" element={<Home />} />
+
+              <Route path="chat/:user/:to/:chatId" element={<ChatWindow />} />
+            </Route>
+          </Routes>
+        </ChatProvider>
+      </UserProvider>
+    </Router>
   );
 }
 
