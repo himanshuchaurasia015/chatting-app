@@ -1,58 +1,36 @@
-// Corrected server code
 const express = require("express");
 const dotenv = require("dotenv");
-dotenv.config();
-const connect = require("./config/db");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+dotenv.config();
+const connectDB = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
+const chatRoutes = require("./routes/chatRoutes");
+const socketHandler = require("./socket");
+
 const app = express();
 const server = http.createServer(app);
-const auth = require("./routes/authRoutes");
-const chatRoutes = require("./routes/chatRoutes");
-const Message = require("./models/Message");
-const { sendMessage } = require("./utils/createNewMessage");
 
 app.use(cors());
+app.use(express.json());
+
+app.use("/api/auth", authRoutes);
+app.use("/api/chat", chatRoutes);
+
+// Initialize Socket.IO
 const io = new Server(server, {
   cors: {
     origin: "*",
     credentials: true,
-
     methods: ["GET", "POST"],
   },
 });
 
-app.use(express.json());
-app.use("/api/auth", auth);
-app.use("/api/chat", chatRoutes);
+// Handle socket connections
+socketHandler(io);
 
-const activeUsers = new Map();
-
-io.on("connection", (socket) => {
-  const userId = socket.handshake.query.userId;
-
-  // Store connection
-  activeUsers.set(userId, socket.id);
-  console.log(`User ${userId} connected`);
-
-  socket.on("send-message", async (message) => {
-    console.log(message);
-    const receiverSocketId = activeUsers.get(message.to);
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("message", {
-        ...message,
-        type: "received",
-      });
-    }
-  });
-
-  socket.on("disconnect", () => {
-    activeUsers.delete(userId);
-    console.log(`User ${userId} disconnected`);
-  });
-});
-
-server.listen(4000, () => {
-  console.log("Socket.io server running on port 4000");
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

@@ -10,6 +10,12 @@ const ChatSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    groupId: {
+      type: String,
+      required: function () {
+        return this.isGroup;
+      },
+    },
     users: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -55,4 +61,4 @@ const ChatSchema = new mongoose.Schema(
 );
 
 const Chat = mongoose.model("Chat", ChatSchema);
-module.exports=Chat;
+module.exports = Chat;

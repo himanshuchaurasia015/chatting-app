@@ -24,17 +24,26 @@ const verify = async (req, res) => {
 const register = async (req, res) => {
   try {
     let { mobileNumber, email, password, name } = req.body;
-    console.log(req.body);
-    const user = await User.findOne({ mobileNumber: mobileNumber });
+    console.log("hello", req.body);
+    const user = await User.findOne({ email });
     if (user) {
       return res.json({
         msg: "User already exist",
       });
     }
     const newUser = await User.create({ mobileNumber, email, password, name });
-
+    console.log(newUser);
+    const token = jwt.sign(
+      { _id: newUser._id, name: newUser.name, email },
+      process.env.JWT_SECRET
+    );
+    console.log({
+      user: newUser,
+      token,
+    });
     return res.json({
       user: newUser,
+      token,
     });
   } catch (error) {
     return res.status(500).json({ error });
@@ -54,7 +63,7 @@ const login = async (req, res) => {
     await bcrypt.compare(password, user.password);
     const token = jwt.sign(
       { _id: user._id, name: user.name, email },
-      "jhguygygbhbuyh7tdfxgvjhbuhdfj"
+      process.env.JWT_SECRET
     );
 
     return res.json({

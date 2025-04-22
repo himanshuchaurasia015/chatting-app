@@ -74,22 +74,27 @@ exports.getOrCreatePersonalChat = async (req, res) => {
 
 // Create group chat with messages
 exports.createGroupChat = async (req, res) => {
-  const { creatorId, name, memberIds } = req.body;
+  const { chatName, users, description, groupAdmin, groupId, isGroup } =
+    req.body;
 
   try {
-    const members = Array.from(new Set([...memberIds, creatorId]));
+    const members = Array.from(new Set([...users, groupAdmin]));
 
     const chat = await Chat.create({
-      isGroup: true,
-      name,
-      members,
-      createdBy: creatorId,
+      isGroup,
+      chatName,
+      users: members,
+      description,
+      groupAdmin,
+      groupId,
     });
+    console.log(chat);
 
-    await chat.populate("members", "name profilePicture").execPopulate();
+    await chat.populate("users", "name profilePicture");
 
     res.json({ chat, messages: [] }); // No messages yet
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -105,7 +110,7 @@ exports.sendMessage = async (req, res) => {
       content: content,
       contentType,
     });
-
+    console.log(result);
     res.status(201).json(result);
   } catch (error) {
     console.log(error);
@@ -116,14 +121,26 @@ exports.sendMessage = async (req, res) => {
 // Get all messages in a chat
 exports.getMessages = async (req, res) => {
   const { chatId } = req.params;
-
+  console.log(chatId);
   try {
-    const messages = await Message.find({ chat: chatId })
+    const messages = await Message.find({ chatId: chatId })
       .populate("sender", "name profilePicture mobileNumber")
       .sort({ createdAt: 1 });
 
     res.json(messages);
   } catch (error) {
+    res.status(500).json({ error: "Could not fetch messages" });
+  }
+};
+
+exports.getChatDetails = async (req, res) => {
+  const { chatId } = req.params;
+  try {
+    const chat = await Chat.findById(chatId);
+
+    res.status(200).json(chat);
+  } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Could not fetch messages" });
   }
 };
