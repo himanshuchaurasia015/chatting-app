@@ -14,8 +14,9 @@ const Home = () => {
   const navigate = useNavigate();
 
   const handleChatClick = async (recipt) => {
-    if (recipt.userId && recipt.chatId) {
+    if (recipt.chatId) {
       setActiveChat(recipt.chatId);
+
       navigate(`/chat/${currentUser._id}/${recipt.userId}/${recipt.chatId}`);
     } else {
       const chat = await api.post("/chat/personal", {
@@ -29,6 +30,11 @@ const Home = () => {
         );
       }
     }
+  };
+
+  const handleGroupChatClick = async (recipt) => {
+    setActiveChat(recipt._id);
+    navigate(`/chat/group/${recipt.groupId}/${recipt._id}`);
   };
 
   async function fetchUsers() {
@@ -48,15 +54,18 @@ const Home = () => {
   //     setMessages(data.messages);
   //   });
   // }, [userId]);
-  useEffect(() => {
-    async function check() {
-      const token = localStorage.getItem("token");
 
+  useEffect(() => {
+    function check() {
+      const token = localStorage.getItem("token");
+      console.log(token);
       let storedUser = localStorage.getItem("user");
-      if (!storedUser && !token) {
+
+      console.log(storedUser);
+      if (!token) {
         navigate("/");
       } else {
-        storedUser = await JSON.parse(storedUser);
+        storedUser = JSON.parse(storedUser);
         setCurrentUser(storedUser);
       }
       fetchUsers().then((users) => setUsers(users.users));
@@ -174,7 +183,6 @@ const Home = () => {
         {activeTab === "chats" && (
           <div className="divide-y divide-gray-200">
             {chats.map((chat) => {
-              console.log(chats);
               const chatId = chat._id;
               let userId;
               let name;
@@ -189,13 +197,25 @@ const Home = () => {
               } else {
                 name = chat.chatName;
               }
-              if (!messages[chatId] || messages[chatId].length === 0)
+              if (
+                !messages[chatId] ||
+                (messages[chatId].length === 0 && !chat.isGroup)
+              )
                 return null;
               return (
                 <div
                   key={chat._id}
                   className="p-3 flex items-center space-x-3 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => handleChatClick({ chatId: chat._id, userId })}
+                  onClick={() => {
+                    if (chat.isGroup) {
+                      handleGroupChatClick(chat);
+                    } else {
+                      handleChatClick({
+                        chatId: chat._id,
+                        userId,
+                      });
+                    }
+                  }}
                 >
                   <div className="relative">
                     <img
@@ -246,7 +266,10 @@ const Home = () => {
         {activeTab === "contacts" && (
           <div className="divide-y divide-gray-200">
             {/* Add new group button */}
-            <div className="p-3 flex items-center space-x-3 hover:bg-gray-50 cursor-pointer">
+            <div
+              className="p-3 flex items-center space-x-3 hover:bg-gray-50 cursor-pointer"
+              onClick={() => navigate("/create/group")}
+            >
               <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

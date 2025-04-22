@@ -13,6 +13,8 @@ import { UserProvider } from "./context/UserContext";
 import { ChatProvider } from "./context/ChatContext";
 import "./App.css";
 import Home from "./components/Home.jsx";
+import CreateGroup from "./pages/CreateGroup.jsx";
+import GroupChat from "./pages/GroupChat.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,13 +34,12 @@ function App() {
           <Routes>
             <Route
               path="/"
-              element={
-                isAuthenticated ? (
-                  <Navigate to={`/home`} />
-                ) : (
-                  <Login setIsAuthenticated={setIsAuthenticated} />
-                )
-              }
+              element={<Login setIsAuthenticated={setIsAuthenticated} />}
+            />
+            <Route path="/create/group" element={<CreateGroup />} />
+            <Route
+              path="/chat/group/:groupId/:chatId"
+              element={<GroupChat />}
             />
             <Route
               path="/register"

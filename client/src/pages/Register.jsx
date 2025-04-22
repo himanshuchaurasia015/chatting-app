@@ -50,14 +50,14 @@ const Register = ({ setIsAuthenticated }) => {
         password,
         name,
       });
-
+      console.log(data);
       localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", JSON.stringify(data.token));
+      localStorage.setItem("token", data.token);
 
       setCurrentUser(data.user);
 
       setIsAuthenticated(true);
-      navigate(`/home/${data.user._id}`); // Redirect to home or chat page
+      navigate(`/home`); // Redirect to home or chat page
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Registration failed");

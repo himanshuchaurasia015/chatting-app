@@ -11,16 +11,23 @@ const Login = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (localStorage.getItem("user")) {
-      async function isAuthenticated() {
-        let user = await JSON.parse(localStorage.getItem("user"));
-        if (user) {
-          navigate(`/home`);
-        }
+    const checkAuth = async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const token = JSON.parse(localStorage.getItem("token"));
+
+      if (user && token) {
+        navigate("/home");
       }
-      isAuthenticated();
-    }
-  });
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  const setItems = async (token, user) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(user));
+    console.log(token, user);
+  };
   const handleSubmit = async (e) => {
     try {
       e.preventDefault();
@@ -30,17 +37,14 @@ const Login = ({ setIsAuthenticated }) => {
         return;
       }
       const response = await api.post("/auth/login", { email, password });
-
       const { token, user } = response.data;
 
-      if (token) {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(user));
+      if (token && user) {
+        setItems(token, user);
+        setCurrentUser(user);
+        setIsAuthenticated(true);
+        navigate(`/home`);
       }
-      setCurrentUser(user);
-      setIsAuthenticated(true);
-      console.log(user);
-      navigate(`/home`);
     } catch (error) {
       console.log(error);
       setError("Invalid credentials. Try email / password", error.msg);
