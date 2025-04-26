@@ -256,6 +256,8 @@ const ChatWindow = () => {
       try {
         const res = await api.get(`/chat/messages/${chatId}`);
         setCurrMsg(res.data);
+        const userResponse = await api.get(`/auth/user/${to}`);
+        setRecipient(userResponse.data.user);
       } catch (err) {
         setError(`Failed to fetch messages: ${err.message}`);
       }
@@ -265,8 +267,6 @@ const ChatWindow = () => {
     const setupSocket = async () => {
       try {
         // Get recipient info
-        const userResponse = await api.get(`/auth/user/${to}`);
-        setRecipient(userResponse.data.user);
 
         // Connect to socket
         const token = localStorage.getItem("token");

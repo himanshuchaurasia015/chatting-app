@@ -15,6 +15,7 @@ import "./App.css";
 import Home from "./components/Home.jsx";
 import CreateGroup from "./pages/CreateGroup.jsx";
 import GroupChat from "./pages/GroupChat.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -36,6 +37,7 @@ function App() {
               path="/"
               element={<Login setIsAuthenticated={setIsAuthenticated} />}
             />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="/create/group" element={<CreateGroup />} />
             <Route
               path="/chat/group/:groupId/:chatId"

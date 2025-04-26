@@ -1,16 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "../context/ChatContext";
 import { useUserContext } from "../context/UserContext";
+import { disconnectSocket, getSocket } from "../utils/socketService";
 import api from "../utils/Axios";
+import Header from "./Header";
 
 const Home = () => {
   // const { userId } = useParams();
+  const socket = useRef(null);
   const { chats, setChats, setActiveChat, messages, setMessages } =
     useChatContext();
   const [users, setUsers] = useState([]);
   const { currentUser, setCurrentUser } = useUserContext();
   const [activeTab, setActiveTab] = useState("chats");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [newMessages, setNewMessages] = useState({});
+
   const navigate = useNavigate();
 
   const handleChatClick = async (recipt) => {
@@ -56,13 +63,10 @@ const Home = () => {
   // }, [userId]);
 
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    let storedUser = localStorage.getItem("user");
     function check() {
-      const token = localStorage.getItem("token");
-      console.log(token);
-      let storedUser = localStorage.getItem("user");
-
-      console.log(storedUser);
-      if (!token) {
+      if (!token && !storedUser) {
         navigate("/");
       } else {
         storedUser = JSON.parse(storedUser);
@@ -71,6 +75,66 @@ const Home = () => {
       fetchUsers().then((users) => setUsers(users.users));
     }
     check();
+
+    const newSocket = getSocket();
+    socket.current = newSocket;
+    newSocket.on("connect", () => {
+      console.log("Connected:", newSocket.id);
+      setLoading(false);
+    });
+
+    newSocket.on("connect_error", (err) => {
+      setError("Connection failed: " + err.message);
+      setLoading(false);
+    });
+
+    // Handle message events - updated to use "group-message" event
+    newSocket.on("group-message", (newMessage) => {
+      const chatId = newMessage.chatId;
+
+      setNewMessages((prev) => {
+        // If chatId exists, increment the count
+        if (chatId in prev) {
+          return {
+            ...prev,
+            [chatId]: prev[chatId] + 1,
+          };
+        } else {
+          // If chatId doesn't exist, initialize it
+          return {
+            ...prev,
+            [chatId]: 1,
+          };
+        }
+      });
+    });
+
+    newSocket.on("message", (newMessage) => {
+      const chatId = newMessage.chatId;
+
+      setNewMessages((prev) => {
+        // If chatId exists, increment the count
+        if (chatId in prev) {
+          return {
+            ...prev,
+            [chatId]: prev[chatId] + 1,
+          };
+        } else {
+          // If chatId doesn't exist, initialize it
+          return {
+            ...prev,
+            [chatId]: 1,
+          };
+        }
+      });
+    });
+
+    // Cleanup
+    return () => {
+      newSocket.off("group-message");
+      newSocket.off("group-message-sent");
+      disconnectSocket();
+    };
   }, []);
 
   useEffect(() => {
@@ -89,11 +153,6 @@ const Home = () => {
       localStorage.setItem("messages", JSON.stringify(messages));
   }, [chats, messages]);
 
-  // const handleLogout = () => {
-  //   localStorage.removeItem("chat-user");
-  //   window.location.href = "/login";
-  // };
-
   return (
     <div className="w-[50%] mx-auto bg-white border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
@@ -109,7 +168,7 @@ const Home = () => {
         <div className="flex space-x-2">
           <button
             className="p-2 rounded-full hover:bg-gray-100"
-            onClick={handleLogout}
+            
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -128,7 +187,7 @@ const Home = () => {
           </button>
         </div>
       </div> */}
-
+      <Header />
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
         <button
@@ -140,6 +199,16 @@ const Home = () => {
           onClick={() => setActiveTab("chats")}
         >
           Chats
+        </button>
+        <button
+          className={`flex-1 py-3 text-center ${
+            activeTab === "groups"
+              ? "border-b-2 border-green-500 text-green-500"
+              : "text-gray-500"
+          }`}
+          onClick={() => setActiveTab("groups")}
+        >
+          Groups
         </button>
         <button
           className={`flex-1 py-3 text-center ${
@@ -186,6 +255,7 @@ const Home = () => {
               const chatId = chat._id;
               let userId;
               let name;
+              if (chat.isGroup) return;
               if (!chat.isGroup) {
                 if (chat.users[0]._id === currentUser._id) {
                   name = chat.users[1].name;
@@ -230,6 +300,11 @@ const Home = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline">
                       <h3 className="text-sm font-medium truncate">{name}</h3>
+                      <p className="text-green-600">
+                        {newMessages[chat._id]
+                          ? newMessages[chat._id] + " new Message"
+                          : null}
+                      </p>
                       {/* <span className="text-xs text-gray-500">
                         {messages.length > 0
                           ? new Date(
@@ -262,8 +337,7 @@ const Home = () => {
             })}
           </div>
         )}
-
-        {activeTab === "contacts" && (
+        {activeTab === "groups" && (
           <div className="divide-y divide-gray-200">
             {/* Add new group button */}
             <div
@@ -291,7 +365,94 @@ const Home = () => {
                 <p className="text-xs text-gray-500">Create a new group chat</p>
               </div>
             </div>
-
+            {chats.map((chat) => {
+              const chatId = chat._id;
+              let userId;
+              let name;
+              if (!chat.isGroup) return;
+              if (!chat.isGroup) {
+                if (chat.users[0]._id === currentUser._id) {
+                  name = chat.users[1].name;
+                  userId = chat.users[1]._id;
+                } else {
+                  name = chat.users[0].name;
+                  userId = chat.users[0]._id;
+                }
+              } else {
+                name = chat.chatName;
+              }
+              if (
+                !messages[chatId] ||
+                (messages[chatId].length === 0 && !chat.isGroup)
+              )
+                return null;
+              return (
+                <div
+                  key={chat._id}
+                  className="p-3 flex items-center space-x-3 hover:bg-gray-50 cursor-pointer"
+                  onClick={() => {
+                    if (chat.isGroup) {
+                      handleGroupChatClick(chat);
+                    } else {
+                      handleChatClick({
+                        chatId: chat._id,
+                        userId,
+                      });
+                    }
+                  }}
+                >
+                  <div className="relative">
+                    <img
+                      src={chat.avatar || "/placeholder.svg"}
+                      alt={name}
+                      className="w-12 h-12 rounded-full"
+                    />
+                    {/* {chat.participants.some((p) => p.status === "online") && (
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
+                    )} */}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline">
+                      <h3 className="text-sm font-medium truncate">{name}</h3>
+                      <p className="text-green-600">
+                        {newMessages[chat._id]
+                          ? newMessages[chat._id] + " new Message"
+                          : null}
+                      </p>
+                      {/* <span className="text-xs text-gray-500">
+                        {messages.length > 0
+                          ? new Date(
+                              chat.messages[chat.messages.length - 1].timestamp
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : ""}
+                      </span> */}
+                    </div>
+                    {/* <p className="text-sm text-gray-500 truncate">
+                      {chat.messages.length > 0
+                        ? `${
+                            chat.messages[chat.messages.length - 1].senderId ===
+                            "current"
+                              ? "You: "
+                              : ""
+                          }${chat.messages[chat.messages.length - 1].content}`
+                        : "No messages yet"}
+                    </p> */}
+                  </div>
+                  {/* {chat.unreadCount > 0 && (
+                    <span className="bg-green-500 text-white text-xs font-medium rounded-full w-5 h-5 flex items-center justify-center">
+                      {chat.unreadCount}
+                    </span>
+                  )} */}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {activeTab === "contacts" && (
+          <div className="divide-y divide-gray-200">
             {users.length == 0 ? (
               <p>No contacts found</p>
             ) : (
