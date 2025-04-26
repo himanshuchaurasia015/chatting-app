@@ -12,10 +12,12 @@ exports.sendMessage = async (message) => {
     await result.populate("sender", "name email profilePicture");
     result = {
       contentType: result.contentType,
+      to: message.to,
       chatId: result.chatId,
       content: result.content,
       senderDetails: result.sender,
       sender: result.sender._id,
+      createdAt: result.createdAt,
     };
     return result;
   } catch (error) {

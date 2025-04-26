@@ -2,6 +2,7 @@ const { verifyToken } = require("./utils/verifyToken");
 const { sendMessage } = require("./utils/createNewMessage");
 const getUserGroups = require("./utils/getGroupIds");
 const { Socket } = require("socket.io");
+const client = require("./client");
 
 const activeUsers = new Map();
 
@@ -30,7 +31,16 @@ module.exports = (io) => {
     });
 
     activeUsers.set(userId, socket.id);
-
+    let pending = await client.llen(`messages:${userId}`);
+    if (pending > 0) {
+      while (pending > 0) {
+        let msg = await client.rpop(`messages:${userId}`);
+        msg = JSON.parse(msg);
+        const SocketId = activeUsers.get(msg.to);
+        socket.to(SocketId).emit("message", msg);
+        pending -= 1;
+      }
+    }
     socket.on("send-group-message", async (message) => {
       try {
         if (message.to) {
@@ -44,14 +54,14 @@ module.exports = (io) => {
 
     socket.on("send-message", async (message) => {
       try {
-        const result = await sendMessage(message);
         const receiverSocketId = activeUsers.get(message.to);
-
+        const result = await sendMessage(message);
         if (receiverSocketId) {
-          socket.to(receiverSocketId).emit("message", {
-            ...result,
-            type: "received",
-          });
+          message = { ...message, deliveredTo: message.to };
+          console.log(message.to, result);
+          socket.to(receiverSocketId).emit("message", result);
+        } else {
+          await client.lpush(`messages:${message.to}`, JSON.stringify(result));
         }
       } catch (err) {
         console.log("Send message error:", err);
