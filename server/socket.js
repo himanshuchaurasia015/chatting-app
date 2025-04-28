@@ -3,6 +3,7 @@ const { sendMessage } = require("./utils/createNewMessage");
 const getUserGroups = require("./utils/getGroupIds");
 const { Socket } = require("socket.io");
 const client = require("./client");
+const { markAsRead, markAllAsRead } = require("./utils/markAsRead");
 
 const activeUsers = new Map();
 
@@ -41,6 +42,36 @@ module.exports = (io) => {
         pending -= 1;
       }
     }
+    socket.emit("update");
+
+    // socket.on("open-inbox", async (data) => {
+    //   try {
+    //     console.log("open-inbox");
+    //     let msgs = await markAllAsRead(data);
+
+    //     socket.emit("inbox-opened", { msgs });
+    //   } catch (error) {
+    //     console.log("read all message error:", error);
+    //   }
+    // });
+
+    socket.on("open-inbox", async (data) => {
+      try {
+        console.log("open-inbox from:", data.userId);
+        const msgs = await markAllAsRead(data);
+
+        // Emit back to THE SAME USER who opened the inbox
+        socket.emit("inbox-opened", msgs); // Direct emission to current socket
+
+        // If you need to notify the other participant:
+        const otherUserSocketId = activeUsers.get(data.sender);
+        if (otherUserSocketId) {
+          socket.to(otherUserSocketId).emit("messages-read", msgs);
+        }
+      } catch (error) {
+        console.log("read error:", error);
+      }
+    });
     socket.on("send-group-message", async (message) => {
       try {
         if (message.to) {
@@ -58,13 +89,27 @@ module.exports = (io) => {
         const result = await sendMessage(message);
         if (receiverSocketId) {
           message = { ...message, deliveredTo: message.to };
-          console.log(message.to, result);
+          // console.log(message.to, result);
           socket.to(receiverSocketId).emit("message", result);
+          socket.emit("message-sent", result);
+          socket.on("message-read", (data) => {
+            socket.emit("message-read", data);
+          });
         } else {
           await client.lpush(`messages:${message.to}`, JSON.stringify(result));
         }
       } catch (err) {
         console.log("Send message error:", err);
+      }
+    });
+    socket.on("message-read", async (msg) => {
+      try {
+        await markAsRead(msg).then(async (res) => {
+          let key = activeUsers.get(res.sender);
+          if (key) socket.to(key).emit("read-by-reciever", res);
+        });
+      } catch (error) {
+        console.log("Send message error:", error);
       }
     });
 

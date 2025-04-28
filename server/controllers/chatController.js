@@ -135,6 +135,7 @@ exports.getMessages = async (req, res) => {
 
 exports.getChatDetails = async (req, res) => {
   const { chatId } = req.params;
+  console.log(chatId);
   try {
     const chat = await Chat.findById(chatId);
 
@@ -144,3 +145,64 @@ exports.getChatDetails = async (req, res) => {
     res.status(500).json({ error: "Could not fetch messages" });
   }
 };
+
+exports.unReadMessages = async (req, res) => {
+  try {
+    console.log("hello");
+    const { _id: userId } = req.user;
+    console.log("fetching unread", userId);
+    console.log("mark all as read is updated");
+    let messages = await Message.find({
+      sender: { $ne: userId },
+      readBy: { $ne: userId },
+    });
+    let unread = {};
+    for (const element of messages) {
+      const chatId = element.chatId;
+      if (chatId in unread) {
+        unread[chatId] += 1;
+      } else {
+        unread[chatId] = 1;
+      }
+    }
+
+    return res.status(200).json(unread);
+  } catch (error) {
+    // console.log(error);
+    return res.status(500).json({
+      err: error,
+    });
+  }
+};
+
+// exports.unReadMessages = async (req, res) => {
+//   const { _id: userId } = req.user;
+//   console.log("Fetching unread for", userId);
+
+//   try {
+//     const unread = await Message.aggregate([
+//       {
+//         $match: {
+//           sender: { $ne: userId },
+//           readBy: { $ne: userId },
+//         },
+//       },
+//       {
+//         $group: {
+//           _id: "$chatId",
+//           count: { $sum: 1 },
+//         },
+//       },
+//     ]);
+
+//     const unreadFormatted = {};
+//     unread.forEach((entry) => {
+//       unreadFormatted[entry._id] = entry.count;
+//     });
+
+//     return res.status(200).json(unreadFormatted);
+//   } catch (error) {
+//     console.error(error);
+//     return res.status(500).json({ err: error.message });
+//   }
+// };
