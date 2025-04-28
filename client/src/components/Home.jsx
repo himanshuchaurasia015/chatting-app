@@ -38,7 +38,11 @@ const Home = () => {
       }
     }
   };
-
+  async function fetchUnread() {
+    const res = await api.get("/chat");
+    let data = res.data;
+    setNewMessages((prev) => ({ ...prev, ...data }));
+  }
   const handleGroupChatClick = async (recipt) => {
     setActiveChat(recipt._id);
     navigate(`/chat/group/${recipt.groupId}/${recipt._id}`);
@@ -49,8 +53,14 @@ const Home = () => {
     return res.data;
   }
   async function getAllChats() {
-    const res = await api.get(`/chat/all/${currentUser._id}`);
-    return res.data;
+    try {
+      const res = await api.get(`/chat/all/${currentUser._id}`);
+      const unread = await api.get("/chat");
+      console.log(unread);
+      return res.data;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   // useEffect(() => {
@@ -65,7 +75,7 @@ const Home = () => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     let storedUser = localStorage.getItem("user");
-    function check() {
+    async function check() {
       if (!token && !storedUser) {
         navigate("/");
       } else {
@@ -75,7 +85,7 @@ const Home = () => {
       fetchUsers().then((users) => setUsers(users.users));
     }
     check();
-
+    fetchUnread();
     const newSocket = getSocket();
     socket.current = newSocket;
     newSocket.on("connect", () => {

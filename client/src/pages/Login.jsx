@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUserContext } from "../context/UserContext";
 import api from "../utils/Axios";
+import { useSocket } from "../context/SocketContext";
 
 const Login = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ const Login = ({ setIsAuthenticated }) => {
   const [error, setError] = useState("");
   const { setCurrentUser } = useUserContext();
   const navigate = useNavigate();
+  const { connectSocket } = useSocket();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -16,12 +18,13 @@ const Login = ({ setIsAuthenticated }) => {
       const token = JSON.parse(localStorage.getItem("token"));
 
       if (user && token) {
+        connectSocket();
         navigate("/home");
       }
     };
 
     checkAuth();
-  }, [navigate]);
+  }, [navigate, connectSocket]);
 
   const setItems = async (token, user) => {
     localStorage.setItem("token", token);
@@ -43,6 +46,7 @@ const Login = ({ setIsAuthenticated }) => {
         setItems(token, user);
         setCurrentUser(user);
         setIsAuthenticated(true);
+        connectSocket();
         navigate(`/home`);
       }
     } catch (error) {

@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { SocketProvider } from "./context/SocketContext";
 import { useState, useEffect } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -32,27 +33,28 @@ function App() {
     <Router>
       <UserProvider>
         <ChatProvider>
-          <Routes>
-            <Route
-              path="/"
-              element={<Login setIsAuthenticated={setIsAuthenticated} />}
-            />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/create/group" element={<CreateGroup />} />
-            <Route
-              path="/chat/group/:groupId/:chatId"
-              element={<GroupChat />}
-            />
-            <Route
-              path="/register"
-              element={<Register setIsAuthenticated={setIsAuthenticated} />}
-            />{" "}
-            <Route path="/" element={<ChatLayout />}>
-              <Route path="/home" element={<Home />} />
-
-              <Route path="chat/:user/:to/:chatId" element={<ChatWindow />} />
-            </Route>
-          </Routes>
+          <SocketProvider>
+            <Routes>
+              <Route
+                path="/"
+                element={<Login setIsAuthenticated={setIsAuthenticated} />}
+              />
+              <Route
+                path="/register"
+                element={<Register setIsAuthenticated={setIsAuthenticated} />}
+              />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/create/group" element={<CreateGroup />} />
+              <Route
+                path="/chat/group/:groupId/:chatId"
+                element={<GroupChat />}
+              />
+              <Route path="/" element={<ChatLayout />}>
+                <Route path="/home" element={<Home />} />
+                <Route path="chat/:user/:to/:chatId" element={<ChatWindow />} />
+              </Route>
+            </Routes>
+          </SocketProvider>
         </ChatProvider>
       </UserProvider>
     </Router>
