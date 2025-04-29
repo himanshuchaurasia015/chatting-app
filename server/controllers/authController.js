@@ -60,15 +60,20 @@ const login = async (req, res) => {
         msg: "User not exist",
       });
     }
-    await bcrypt.compare(password, user.password);
-    const token = jwt.sign(
-      { _id: user._id, name: user.name, email },
-      process.env.JWT_SECRET
-    );
+    const result = await bcrypt.compare(password, user.password);
+    if (result) {
+      const token = jwt.sign(
+        { _id: user._id, name: user.name, email },
+        process.env.JWT_SECRET
+      );
 
-    return res.json({
-      user,
-      token,
+      return res.status(200).json({
+        user,
+        token,
+      });
+    }
+    return res.status(401).json({
+      msg: "check email or password",
     });
   } catch (error) {
     console.log(error);
@@ -83,6 +88,7 @@ const users = async (req, res) => {
       users: users,
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ error });
   }
 };

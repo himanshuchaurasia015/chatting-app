@@ -99,6 +99,26 @@ exports.createGroupChat = async (req, res) => {
   }
 };
 
+exports.updateGroupChat = async (req, res) => {
+  const { chatId, Updates } = req.body;
+
+  try {
+    const updated = await Chat.findByIdAndUpdate(chatId, Updates, {
+      new: true,
+    }).populate("users", "name profilePicture");
+
+    if (!updated) {
+      return res.status(404).json({ error: "Chat not found" });
+    }
+
+    res.json({ chat: updated, messages: [] }); // You can fetch messages later if needed
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
 // Send message to a chat
 exports.sendMessage = async (req, res) => {
   const { chatId, sender, content, contentType = "text" } = req.body;
@@ -138,8 +158,12 @@ exports.getChatDetails = async (req, res) => {
   console.log(chatId);
   try {
     const chat = await Chat.findById(chatId);
-
-    res.status(200).json(chat);
+    const users = chat.users;
+    await Chat.populate(chat, {
+      path: "users",
+      select: "name profilePicture mobileNumber",
+    });
+    res.status(200).json({ chat, users });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: "Could not fetch messages" });

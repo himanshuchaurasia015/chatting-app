@@ -10,6 +10,11 @@ router.post(
   chatController.getOrCreatePersonalChat
 );
 router.get("/:chatId", authMiddleware, chatController.getChatDetails);
+router
+  .route("/group")
+  .all(authMiddleware)
+  .get(chatController.createGroupChat)
+  .put(chatController.updateGroupChat);
 router.post("/group", authMiddleware, chatController.createGroupChat);
 router.post("/message", authMiddleware, chatController.sendMessage);
 router.get("/messages/:chatId", authMiddleware, chatController.getMessages);

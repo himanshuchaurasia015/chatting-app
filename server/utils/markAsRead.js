@@ -29,7 +29,7 @@ exports.markAsRead = async (message) => {
 
 exports.markAllAsRead = async (message) => {
   const { chatId, userId } = message;
-  console.log("mark all as read is updated");
+  // console.log("mark all as read is updated");
   try {
     let messages = await Message.find({
       chatId,
