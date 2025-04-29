@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "../context/ChatContext";
 import { useUserContext } from "../context/UserContext";
-import { disconnectSocket, getSocket } from "../utils/socketService";
+// import { disconnectSocket, getSocket } from "../utils/socketService";
 import api from "../utils/Axios";
 import Header from "./Header";
+import { useSocket } from "../context/SocketContext";
 
 const Home = () => {
-  // const { userId } = useParams();
-  const socket = useRef(null);
+  const { socket } = useSocket();
   const { chats, setChats, setActiveChat, messages, setMessages } =
     useChatContext();
   const [users, setUsers] = useState([]);
@@ -55,22 +55,12 @@ const Home = () => {
   async function getAllChats() {
     try {
       const res = await api.get(`/chat/all/${currentUser._id}`);
-      const unread = await api.get("/chat");
-      console.log(unread);
-      return res.data;
+      setChats(res.data.chats);
+      setMessages(res.data.messages);
     } catch (error) {
       console.log(error);
     }
   }
-
-  // useEffect(() => {
-  //   verifyResponse();
-  //   fetchUsers().then((users) => setUsers(users.users));
-  //   getAllChats().then((data) => {
-  //     setChats(data.chats);
-  //     setMessages(data.messages);
-  //   });
-  // }, [userId]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -86,20 +76,35 @@ const Home = () => {
     }
     check();
     fetchUnread();
-    const newSocket = getSocket();
-    socket.current = newSocket;
-    newSocket.on("connect", () => {
-      console.log("Connected:", newSocket.id);
-      setLoading(false);
-    });
+  }, [navigate]);
 
-    newSocket.on("connect_error", (err) => {
+  useEffect(() => {
+    if (currentUser?._id) {
+      getAllChats();
+    }
+  }, [currentUser]);
+
+  const addNewChat = async (newChatId) => {
+    try {
+      const response = await api.get(`/chat/${newChatId}`);
+      const newChat = response.data.chat;
+      // setChats((prev) => [...prev, newChat]);
+      setChats((prev) =>
+        prev.some((c) => c._id === newChat._id) ? prev : [...prev, newChat]
+      );
+    } catch (error) {
+      console.error("Error fetching new chat:", error);
+    }
+  };
+  useEffect(() => {
+    if (!socket) return;
+    socket.on("connect_error", (err) => {
       setError("Connection failed: " + err.message);
       setLoading(false);
     });
 
     // Handle message events - updated to use "group-message" event
-    newSocket.on("group-message", (newMessage) => {
+    socket.on("group-message", (newMessage) => {
       const chatId = newMessage.chatId;
 
       setNewMessages((prev) => {
@@ -119,42 +124,33 @@ const Home = () => {
       });
     });
 
-    newSocket.on("message", (newMessage) => {
-      const chatId = newMessage.chatId;
+    socket.on("message", (newMessage) => {
+      const newChatId = newMessage.chatId;
+
+      setMessages((prevMessages) => {
+        const existingMessages = prevMessages[newChatId] || [];
+        return {
+          ...prevMessages,
+          [newChatId]: [...existingMessages, newMessage],
+        };
+      });
 
       setNewMessages((prev) => {
-        // If chatId exists, increment the count
-        if (chatId in prev) {
-          return {
-            ...prev,
-            [chatId]: prev[chatId] + 1,
-          };
+        if (newChatId in prev) {
+          return { ...prev, [newChatId]: prev[newChatId] + 1 };
         } else {
-          // If chatId doesn't exist, initialize it
-          return {
-            ...prev,
-            [chatId]: 1,
-          };
+          addNewChat(newChatId);
+          return { ...prev, [newChatId]: 1 };
         }
       });
     });
 
-    // Cleanup
     return () => {
-      newSocket.off("group-message");
-      newSocket.off("group-message-sent");
-      disconnectSocket();
+      socket.off("message");
+      socket.off("group-message");
+      socket.off("connect_error");
     };
-  }, []);
-
-  useEffect(() => {
-    if (currentUser?._id) {
-      getAllChats().then((data) => {
-        setChats(data.chats);
-        setMessages(data.messages);
-      });
-    }
-  }, [currentUser]);
+  }, [socket]);
 
   // Save to localStorage when chats or messages update
   useEffect(() => {

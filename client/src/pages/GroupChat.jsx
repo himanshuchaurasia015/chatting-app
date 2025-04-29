@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import api from "../utils/Axios";
 import { useChatContext } from "../context/ChatContext";
 import { useUserContext } from "../context/UserContext";
-import { disconnectSocket, getSocket } from "../utils/socketService";
+import { useSocket } from "../context/SocketContext";
 
 const GroupChat = () => {
   const { groupId, chatId } = useParams();
@@ -16,7 +16,7 @@ const GroupChat = () => {
   const [recipient, setRecipient] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const socket = useRef(null);
+  const { socket, connectSocket } = useSocket();
   const messagesEndRef = useRef(null);
   const storedUser = localStorage.getItem("user");
   const user = JSON.parse(storedUser || "{}");
@@ -42,27 +42,41 @@ const GroupChat = () => {
         const res = await api.get(`/chat/messages/${chatId}`);
         setCurrMsg(res.data);
         const groupInfo = await api.get(`/chat/${chatId}`);
-        setRecipient(groupInfo.data);
+        setRecipient(groupInfo.data.chat);
+        if (socket.connected) {
+          socket.emit("group-chat-open", {
+            chatId,
+            userId: currentUser._id,
+            groupId,
+          });
+        }
+        setLoading(false);
+        setLoading(false);
       } catch (err) {
         console.log(err);
         setError(`Failed to fetch messages: ${err.message}`);
       }
     };
+    if (!socket) {
+      connectSocket();
+      return;
+    }
+    const handleConnect = () => {
+      console.log("Socket connected:", socket.id);
+    };
+    if (socket.connected) {
+      console.log("Socket connected:", socket.id);
+    } else {
+      socket.on("connect", handleConnect);
+    }
 
-    const newSocket = getSocket();
-    socket.current = newSocket;
-    newSocket.on("connect", () => {
-      console.log("Connected:", newSocket.id);
-      setLoading(false);
-    });
-
-    newSocket.on("connect_error", (err) => {
+    socket.on("connect_error", (err) => {
       setError("Connection failed: " + err.message);
       setLoading(false);
     });
 
     // Handle message events - updated to use "group-message" event
-    newSocket.on("group-message", (newMessage) => {
+    socket.on("group-message", (newMessage) => {
       console.log("message-recieved");
       // Check if the message is related to our current chat and not sent by current user
       if (newMessage.chatId === chatId && newMessage.sender !== user._id) {
@@ -71,7 +85,7 @@ const GroupChat = () => {
       }
     });
 
-    newSocket.on("group-message-sent", (newMessage) => {
+    socket.on("group-message-sent", (newMessage) => {
       console.log("Message sent confirmation:", newMessage);
     });
 
@@ -79,11 +93,11 @@ const GroupChat = () => {
 
     // Cleanup
     return () => {
-      newSocket.off("group-message");
-      newSocket.off("group-message-sent");
-      disconnectSocket();
+      socket.off("group-message");
+      socket.off("group-message-sent");
+      socket.off("connect_error");
     };
-  }, [groupId, chatId]);
+  }, [groupId, chatId, socket, connectSocket]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -93,7 +107,7 @@ const GroupChat = () => {
   // Send message handler
   const sendMessage = (e) => {
     e.preventDefault();
-    if (!message.trim() || !socket.current || !recipient) return;
+    if (!message.trim() || !socket || !recipient) return;
 
     const newMessage = {
       sender: currentUser._id,
@@ -104,7 +118,7 @@ const GroupChat = () => {
       createdAt: new Date().toISOString(),
     };
 
-    socket.current.emit("send-group-message", newMessage);
+    socket.emit("send-group-message", newMessage);
 
     // Add to local state with current user details for display
     const messageWithDetails = {
@@ -197,8 +211,35 @@ const GroupChat = () => {
   return (
     <div className="flex flex-col h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-white p-4 shadow">
+      <div className="bg-white p-4 shadow flex justify-center">
         <h2 className="text-xl font-bold">Chat with {recipient.chatName}</h2>
+        {recipient.groupAdmin === currentUser._id && (
+          <button
+            className="text-gray-600 hover:bg-gray-100 p-2 rounded-full"
+            onClick={() => navigate(`/settings/${chatId}`)}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Messages */}

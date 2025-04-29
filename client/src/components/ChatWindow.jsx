@@ -14,7 +14,7 @@ const ChatWindow = () => {
   const [recipient, setRecipient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const socket = useSocket();
+  const { socket, connectSocket } = useSocket();
   const messagesEndRef = useRef(null);
 
   // Check authentication
@@ -27,61 +27,125 @@ const ChatWindow = () => {
     }
   }, [navigate]);
   useEffect(() => {
+    if (!socket) {
+      connectSocket();
+      return;
+    }
+
+    const handleConnect = () => {
+      console.log("Socket connected:", socket.id);
+    };
+
+    const handleConnectError = (err) => {
+      setError("Connection failed: " + err.message);
+      setLoading(false);
+    };
+
+    if (socket.connected) {
+      handleConnect();
+    } else {
+      socket.on("connect", handleConnect);
+    }
+
+    socket.on("connect_error", handleConnectError);
+
+    return () => {
+      socket.off("connect", handleConnect);
+      socket.off("connect_error", handleConnectError);
+    };
+  }, [socket, connectSocket]);
+
+  useEffect(() => {
     if (!userId || !to || !chatId) return;
-    const setup = async () => {
+
+    const setupChat = async () => {
       try {
         const res = await api.get(`/chat/messages/${chatId}`);
         setCurrMsg(res.data);
-        // Get recipient info
         const userResponse = await api.get(`/auth/user/${to}`);
         setRecipient(userResponse.data.user);
 
-        // socket.on("connect", () => {
-        //   console.log("Connected:", socket.id);
-
-        //   setLoading(false);
-        // });
-        if (!socket) return;
-        socket.emit("open-inbox", {
-          chatId,
-          userId,
-          sender: userResponse.data.user._id,
-        });
+        // Emit open-inbox only if socket is connected
+        if (socket.connected) {
+          socket.emit("open-inbox", {
+            chatId,
+            userId,
+            sender: userResponse.data.user._id,
+          });
+        }
+        setLoading(false);
       } catch (err) {
         setError("Server error: " + err.message);
         setLoading(false);
       }
     };
-    setup();
-  }, [userId, to, chatId, navigate]);
+
+    if (!socket) {
+      connectSocket();
+      return;
+    }
+
+    const handleConnect = async () => {
+      await setupChat();
+    };
+
+    if (socket.connected) {
+      setupChat();
+    } else {
+      socket.once("connect", handleConnect);
+    }
+
+    return () => {
+      if (socket) {
+        socket.off("connect", handleConnect);
+      }
+    };
+  }, [socket, userId, to, chatId, connectSocket]);
 
   useEffect(() => {
     // Set up socket connection
-    if (!socket) return;
+    if (!socket) {
+      return;
+    }
+    console.log(socket);
+
     socket.on("connect_error", (err) => {
       setError("Connection failed: " + err.message);
       setLoading(false);
     });
     socket.on("message", (newMessage) => {
       setCurrMsg((prev) => [...prev, newMessage]);
-
+      console.log("message", newMessage);
       socket.emit("message-read", {
         chatId,
+        sender: newMessage.sender,
         _id: newMessage._id,
         userId,
       });
     });
+    // socket.on("message-read",(msgs)=>{
+    //   setCurrMsg((prev)=>{
+    //    let arr= prev.map((msg)=>{
+    //     if(msg._id===msgs._id){
+
+    //     }
+
+    //     })
+    //   })
+    // })
+
     socket.on("inbox-opened", (seenMessages) => {
-      const seenIds = new Set(seenMessages.msgs.map((m) => m._id));
+      console.log("inbox opened event", seenMessages);
+      const seenIds = new Set(seenMessages.map((m) => m._id));
 
       setCurrMsg((prevMessages) =>
         prevMessages.map((msg) => {
           if (seenIds.has(msg._id)) {
             // Update readBy array to include the current userId (if not already)
-            if (!msg.readBy.includes(userId)) {
+            if (!msg.readBy.includes(to)) {
               return {
                 ...msg,
-                readBy: [...msg.readBy, userId],
+                readBy: [to],
               };
             }
           }
@@ -99,8 +163,6 @@ const ChatWindow = () => {
     });
 
     socket.on("read-by-reciever", (readInfo) => {
-      console.log("Message read by:", readInfo);
-
       const { _id: messageId, readBy } = readInfo; // assuming server sends this info
       let readerId = readBy[0];
       // Update messages
@@ -208,7 +270,6 @@ const ChatWindow = () => {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4">
         {currMsg.map((msg, index) => {
-          console.log(msg);
           let readBy = msg.readBy;
           let isRead = readBy.length != 0 && readBy[0] === recipient._id;
           return (

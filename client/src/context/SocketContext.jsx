@@ -15,13 +15,7 @@ export const SocketProvider = ({ children }) => {
   const connectSocket = useCallback(() => {
     const token = localStorage.getItem("token");
 
-    // if (!token) {
-    //   console.warn("No token found. Cannot connect socket.");
-    //   return;
-    // }
-
     const newSocket = io("http://localhost:4000", {
-      withCredentials: true,
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,
@@ -29,9 +23,20 @@ export const SocketProvider = ({ children }) => {
       transports: ["websocket"],
     });
 
+    newSocket.on("connect", () => {
+      console.log("Socket connected:", newSocket.id);
+    });
+
+    newSocket.on("connect_error", (err) => {
+      console.error("Connection error:", err);
+    });
+
     setSocket(newSocket);
   }, []);
 
+  useEffect(() => {
+    connectSocket();
+  }, [connectSocket]);
   const disconnectSocket = useCallback(() => {
     if (socket) {
       socket.disconnect();

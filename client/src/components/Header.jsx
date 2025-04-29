@@ -78,7 +78,7 @@ const Header = () => {
               </div>
             )}
           </div>
-          <h1 className="font-bold text-lg text-gray-800">ChatterBox</h1>
+          <h1 className="font-bold text-lg text-gray-800">Gossip Here</h1>
         </div>
 
         <div className="flex items-center space-x-3">
