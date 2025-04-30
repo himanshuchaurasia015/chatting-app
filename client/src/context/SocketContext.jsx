@@ -15,7 +15,7 @@ export const SocketProvider = ({ children }) => {
   const connectSocket = useCallback(() => {
     const token = localStorage.getItem("token");
 
-    const newSocket = io("http://localhost:4000", {
+    const newSocket = io(import.meta.env.VITE_SOCKET_URL, {
       auth: { token },
       reconnection: true,
       reconnectionAttempts: 5,
