@@ -2,7 +2,7 @@ const { verifyToken } = require("./utils/verifyToken");
 const { sendMessage } = require("./utils/createNewMessage");
 const getUserGroups = require("./utils/getGroupIds");
 const { Socket } = require("socket.io");
-const client = require("./client");
+// const client = require("./client");
 const { markAsRead, markAllAsRead } = require("./utils/markAsRead");
 
 const activeUsers = new Map();
@@ -32,17 +32,17 @@ module.exports = (io) => {
     });
 
     activeUsers.set(userId, socket.id);
-    let pending = await client.llen(`messages:${userId}`);
-    if (pending > 0) {
-      while (pending > 0) {
-        let msg = await client.rpop(`messages:${userId}`);
-        msg = JSON.parse(msg);
-        console.log("pending", msg);
-        const SocketId = activeUsers.get(msg.to);
-        socket.to(SocketId).emit("message", msg);
-        pending -= 1;
-      }
-    }
+    // let pending = await client.llen(`messages:${userId}`);
+    // if (pending > 0) {
+    //   while (pending > 0) {
+    //     let msg = await client.rpop(`messages:${userId}`);
+    //     msg = JSON.parse(msg);
+    //     console.log("pending", msg);
+    //     const SocketId = activeUsers.get(msg.to);
+    //     socket.to(SocketId).emit("message", msg);
+    //     pending -= 1;
+    //   }
+    // }
 
     socket.on("group-chat-open", async (data) => {
       try {
