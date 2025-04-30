@@ -18,6 +18,8 @@ import CreateGroup from "./pages/CreateGroup.jsx";
 import GroupChat from "./pages/GroupChat.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import Setting from "./pages/Setting.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -44,20 +46,19 @@ function App() {
                 path="/register"
                 element={<Register setIsAuthenticated={setIsAuthenticated} />}
               />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/create/group" element={<CreateGroup />} />
-              <Route
-                path="/chat/group/:groupId/:chatId"
-                element={<GroupChat />}
-              />
-              <Route path="/settings/:chatId" element={<Setting />} />
+              <Route element={<ProtectedRoute />}>
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/create/group" element={<CreateGroup />} />
+                <Route
+                  path="/chat/group/:groupId/:chatId"
+                  element={<GroupChat />}
+                />
+                <Route path="/settings/:chatId" element={<Setting />} />
 
-              <Route path="/home" element={<Home />} />
-              <Route path="chat/:user/:to/:chatId" element={<ChatWindow />} />
-              {/* <Route path="/" element={<ChatLayout />}>
-              
-                
-              </Route> */}
+                <Route path="/home" element={<Home />} />
+                <Route path="chat/:user/:to/:chatId" element={<ChatWindow />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </SocketProvider>
         </ChatProvider>

@@ -1,18 +1,10 @@
-import { Navigate } from "react-router-dom";
-import { useUserContext } from "../context/UserContext";
+import { Navigate, Outlet } from "react-router-dom";
 
-const ProtectedRoute = ({ children }) => {
-  const { currentUser, loading } = useUserContext();
+const ProtectedRoute = () => {
+  const token = localStorage.getItem("token");
+  const user = localStorage.getItem("user");
 
-  if (loading) {
-    return <p>Loading...</p>;
-  }
-
-  if (!currentUser) {
-    return <Navigate to="/" replace />;
-  }
-
-  return children;
+  return token && user ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 export default ProtectedRoute;
