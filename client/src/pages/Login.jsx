@@ -15,11 +15,11 @@ const Login = ({ setIsAuthenticated }) => {
   useEffect(() => {
     const checkAuth = async () => {
       const user = JSON.parse(localStorage.getItem("user"));
-      const token = JSON.parse(localStorage.getItem("token"));
+      const token = localStorage.getItem("token");
 
       if (user && token) {
-        connectSocket();
         navigate("/home");
+        connectSocket();
       }
     };
 

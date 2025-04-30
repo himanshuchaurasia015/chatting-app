@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserContext } from "../context/UserContext";
 
-const Header = () => {
+const Header = ({ setWindow }) => {
   const { currentUser, setCurrentUser } = useUserContext();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
@@ -82,7 +82,7 @@ const Header = () => {
         </div>
 
         <div className="flex items-center space-x-3">
-          <button
+          {/* <button
             className="text-gray-600 hover:bg-gray-100 p-2 rounded-full"
             onClick={() => navigate("/settings")}
           >
@@ -106,10 +106,10 @@ const Header = () => {
                 d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-          </button>
+          </button> */}
           <button
             className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full"
-            onClick={() => navigate("/create/chat")}
+            onClick={() => setWindow("contacts")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatContext } from "../context/ChatContext";
 import { useUserContext } from "../context/UserContext";
-// import { disconnectSocket, getSocket } from "../utils/socketService";
 import api from "../utils/Axios";
 import Header from "./Header";
 import { useSocket } from "../context/SocketContext";
@@ -193,7 +192,7 @@ const Home = () => {
           </button>
         </div>
       </div> */}
-      <Header />
+      <Header setWindow={setActiveTab} />
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
         <button
@@ -229,7 +228,7 @@ const Home = () => {
       </div>
 
       {/* Search */}
-      <div className="p-3 border-b border-gray-200">
+      <div className="p-3 border-b border-gray-200 hidden">
         <div className="relative">
           <input
             type="text"
