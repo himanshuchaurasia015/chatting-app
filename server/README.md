@@ -1,0 +1,4 @@
+#env
+DB_URL=
+PORT=
+JWT_SECRET=
