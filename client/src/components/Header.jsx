@@ -22,18 +22,27 @@ const Header = ({ setWindow }) => {
         <div className="flex items-center space-x-3">
           <div className="relative">
             <img
-              src={currentUser?.avatar || "/placeholder.svg?height=40&width=40"}
+              src={currentUser?.avatar || "./default-profile.png"}
               alt="Profile"
               className="w-10 h-10 rounded-full cursor-pointer"
               onMouseEnter={() => setShowMenu(!showMenu)}
             />
             {showMenu && (
               <div className="absolute top-12 left-0 bg-white shadow-lg rounded-md border border-gray-100 w-48 z-10">
-                <div className="p-3 border-b border-gray-100">
-                  <p className="font-medium">{currentUser?.name || "User"}</p>
-                  <p className="text-xs text-gray-500">
-                    {currentUser?.email || ""}
-                  </p>
+                <div className="p-3 gap-2 flex border-b border-gray-100">
+                  <div>
+                    <img
+                      src={currentUser?.avatar || "./default-profile.png"}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full cursor-pointer"
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium">{currentUser?.name || "User"}</p>
+                    <p className="text-xs text-gray-500">
+                      {currentUser?.email || ""}
+                    </p>
+                  </div>
                 </div>
                 <div
                   className="p-3 flex items-center space-x-2 text-gray-700 hover:bg-gray-50 cursor-pointer"

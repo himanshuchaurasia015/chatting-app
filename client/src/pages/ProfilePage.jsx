@@ -23,7 +23,7 @@ const ProfilePage = () => {
         name: currentUser.name || "",
         email: currentUser.email || "",
         status: currentUser.status || "Available",
-        avatar: currentUser.avatar || "",
+        avatar: currentUser.profilePicture || "",
       });
     } else {
       // Redirect if no user is logged in
@@ -150,7 +150,10 @@ const ProfilePage = () => {
           <div className="flex flex-col items-center mb-8">
             <div className="relative mb-4">
               <img
-                src={formData.avatar || "/placeholder.svg?height=120&width=120"}
+                src={
+                  "./" + formData.avatar ||
+                  "/placeholder.svg?height=120&width=120"
+                }
                 alt="Profile"
                 className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-md"
               />

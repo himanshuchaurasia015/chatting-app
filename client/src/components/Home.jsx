@@ -294,7 +294,7 @@ const Home = () => {
                 >
                   <div className="relative">
                     <img
-                      src={chat.avatar || "/placeholder.svg"}
+                      src={chat.avatar || "./default-profile.png"}
                       alt={name}
                       className="w-12 h-12 rounded-full"
                     />
@@ -408,7 +408,7 @@ const Home = () => {
                 >
                   <div className="relative">
                     <img
-                      src={chat.avatar || "/placeholder.svg"}
+                      src={"./" + chat.groupPicture}
                       alt={name}
                       className="w-12 h-12 rounded-full"
                     />
@@ -469,7 +469,7 @@ const Home = () => {
                 >
                   <div className="relative">
                     <img
-                      src={user.avatar || "/placeholder.svg"}
+                      src={user.profilePicture || "./default-profile.png"}
                       alt={user.name || "user"}
                       className="w-12 h-12 rounded-full"
                     />
