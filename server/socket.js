@@ -96,9 +96,10 @@ module.exports = (io) => {
           // console.log(message.to, result);
 
           socket.to(receiverSocketId).emit("message", result);
-        } else {
-          await client.lpush(`messages:${message.to}`, JSON.stringify(result));
         }
+        // else {
+        //   await client.lpush(`messages:${message.to}`, JSON.stringify(result));
+        // }
         socket.emit("message-sent", result);
       } catch (err) {
         console.log("Send message error:", err);
