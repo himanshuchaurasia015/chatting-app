@@ -315,61 +315,84 @@ const Home = () => {
         <div className="flex-1 overflow-y-auto">
           {activeTab === "chats" && (
             <div className="divide-y divide-gray-200">
-              {chats.map((chat) => {
-                const chatId = chat._id;
-                let userId;
-                let name;
-                if (chat.isGroup) return;
-                if (!chat.isGroup) {
-                  if (chat.users[0]._id === currentUser._id) {
-                    name = chat.users[1]?.name || "user";
-                    userId = chat.users[1]._id;
+              {
+                // chats.map((chat) => {
+                //   const chatId = chat._id;
+                //   let userId;
+                //   let name;
+                //   if (chat.isGroup) return;
+                //   if (!chat.isGroup) {
+                //     if (chat.users[0]._id === currentUser._id) {
+                //       name = chat.users[1]?.name || "user";
+                //       userId = chat.users[1]._id;
+                //     } else {
+                //       name = chat.users[0]?.name;
+                //       userId = chat.users[0]._id;
+                //     }
+                //   } else {
+                //     name = chat.chatName;
+                //   }
+                //   if (
+                //     !messages[chatId] ||
+                //     (messages[chatId].length === 0 && !chat.isGroup)
+                //   )
+                //     return null;
+                chats.map((chat) => {
+                  if (chat.isGroup) return;
+
+                  const user0 = chat.users?.[0];
+                  const user1 = chat.users?.[1];
+
+                  // Skip if users are not properly populated
+                  if (!user0 || !user1) return null;
+
+                  let userId, name;
+                  if (user0._id === currentUser._id) {
+                    name = user1.name || "user";
+                    userId = user1._id;
                   } else {
-                    name = chat.users[0]?.name;
-                    userId = chat.users[0]._id;
+                    name = user0.name;
+                    userId = user0._id;
                   }
-                } else {
-                  name = chat.chatName;
-                }
-                if (
-                  !messages[chatId] ||
-                  (messages[chatId].length === 0 && !chat.isGroup)
-                )
-                  return null;
-                return (
-                  <div
-                    key={chat._id}
-                    className="p-3 flex items-center space-x-3 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => {
-                      if (chat.isGroup) {
-                        handleGroupChatClick(chat);
-                      } else {
-                        handleChatClick({
-                          chatId: chat._id,
-                          userId,
-                        });
-                      }
-                    }}
-                  >
-                    <div className="relative">
-                      <img
-                        src={chat.avatar || "./default-profile.png"}
-                        alt={name}
-                        className="w-12 h-12 rounded-full"
-                      />
-                      {/* {chat.participants.some((p) => p.status === "online") && (
+
+                  if (!messages[chat._id] || messages[chat._id].length === 0)
+                    return null;
+                  return (
+                    <div
+                      key={chat._id}
+                      className="p-3 flex itesms-center space-x-3 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => {
+                        if (chat.isGroup) {
+                          handleGroupChatClick(chat);
+                        } else {
+                          handleChatClick({
+                            chatId: chat._id,
+                            userId,
+                          });
+                        }
+                      }}
+                    >
+                      <div className="relative">
+                        <img
+                          src={chat.avatar || "./default-profile.png"}
+                          alt={name}
+                          className="w-12 h-12 rounded-full"
+                        />
+                        {/* {chat.participants.some((p) => p.status === "online") && (
                       <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></span>
                     )} */}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-baseline">
-                        <h3 className="text-sm font-medium truncate">{name}</h3>
-                        <p className="text-green-600">
-                          {newMessages[chat._id]
-                            ? newMessages[chat._id] + " new Message"
-                            : null}
-                        </p>
-                        {/* <span className="text-xs text-gray-500">
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-baseline">
+                          <h3 className="text-sm font-medium truncate">
+                            {name}
+                          </h3>
+                          <p className="text-green-600">
+                            {newMessages[chat._id]
+                              ? newMessages[chat._id] + " new Message"
+                              : null}
+                          </p>
+                          {/* <span className="text-xs text-gray-500">
                         {messages.length > 0
                           ? new Date(
                               chat.messages[chat.messages.length - 1].timestamp
@@ -379,8 +402,8 @@ const Home = () => {
                             })
                           : ""}
                       </span> */}
-                      </div>
-                      {/* <p className="text-sm text-gray-500 truncate">
+                        </div>
+                        {/* <p className="text-sm text-gray-500 truncate">
                       {chat.messages.length > 0
                         ? `${
                             chat.messages[chat.messages.length - 1].senderId ===
@@ -390,15 +413,16 @@ const Home = () => {
                           }${chat.messages[chat.messages.length - 1].content}`
                         : "No messages yet"}
                     </p> */}
-                    </div>
-                    {/* {chat.unreadCount > 0 && (
+                      </div>
+                      {/* {chat.unreadCount > 0 && (
                     <span className="bg-green-500 text-white text-xs font-medium rounded-full w-5 h-5 flex items-center justify-center">
                       {chat.unreadCount}
                     </span>
                   )} */}
-                  </div>
-                );
-              })}
+                    </div>
+                  );
+                })
+              }
             </div>
           )}
           {activeTab === "groups" && (
