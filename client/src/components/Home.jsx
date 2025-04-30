@@ -263,10 +263,10 @@ const Home = () => {
               if (chat.isGroup) return;
               if (!chat.isGroup) {
                 if (chat.users[0]._id === currentUser._id) {
-                  name = chat.users[1].name;
+                  name = chat.users[1]?.name|| "user";
                   userId = chat.users[1]._id;
                 } else {
-                  name = chat.users[0].name;
+                  name = chat.users[0]?.name;
                   userId = chat.users[0]._id;
                 }
               } else {
